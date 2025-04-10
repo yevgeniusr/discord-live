@@ -2,55 +2,463 @@
 <html>
 <head>
     <title>Discord Status Updater</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --discord-blurple: #5865F2;
+            --discord-green: #43b581;
+            --discord-red: #f04747;
+            --discord-dark: #36393f;
+            --discord-light: #f6f6f7;
+            --discord-lighter: #ffffff;
+            --discord-secondary: #4f545c;
+        }
+        
         body {
-            width: 300px;
-            padding: 15px;
-            font-family: Arial, sans-serif;
+            width: 340px;
+            padding: 16px;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--discord-dark);
+            color: var(--discord-light);
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
         }
+        
+        h2 {
+            margin-top: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--discord-lighter);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-image: url('icons/icon16.png');
+            background-size: contain;
+            margin-right: 8px;
+        }
+        
+        .card {
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px 0 rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: var(--discord-lighter);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
+        
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--discord-light);
         }
-        input[type="text"], textarea {
+        
+        input[type="text"], 
+        input[type="password"],
+        textarea, 
+        select {
             width: 100%;
-            padding: 5px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: none;
+            background-color: #202225;
+            color: var(--discord-light);
+            font-family: inherit;
+            font-size: 14px;
+            box-sizing: border-box;
         }
+        
+        input[type="text"]:focus, 
+        input[type="password"]:focus,
+        textarea:focus, 
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--discord-blurple);
+        }
+        
         button {
-            padding: 8px 15px;
-            background-color: #5865F2;
+            padding: 8px 16px;
+            background-color: var(--discord-blurple);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background-color 0.2s;
         }
+        
+        button:hover {
+            background-color: #4752c4;
+        }
+        
+        button:disabled {
+            background-color: #4f5660;
+            cursor: not-allowed;
+        }
+        
+        .btn-success {
+            background-color: var(--discord-green);
+        }
+        
+        .btn-success:hover {
+            background-color: #3ca374;
+        }
+        
+        .btn-danger {
+            background-color: var(--discord-red);
+        }
+        
+        .btn-danger:hover {
+            background-color: #d84040;
+        }
+        
+        .btn-secondary {
+            background-color: #4f545c;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #40444b;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            padding: 0;
+            height: 32px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
         .status-mapping {
             margin-bottom: 10px;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
+            padding: 12px;
+            background-color: #36393f;
+            border-radius: 6px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
+        
+        .status-mapping:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
         .add-mapping {
             display: flex;
             justify-content: center;
-            margin-top: 10px;
+            margin-top: 12px;
+        }
+        
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #2f3136;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: var(--discord-light);
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--discord-blurple);
+        }
+        
+        .template-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            background-color: #202225;
+            color: #dcddde;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #72767d;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--discord-green);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            background-color: var(--discord-blurple);
+            color: white;
+        }
+        
+        .badge-success {
+            background-color: var(--discord-green);
+        }
+        
+        .badge-error {
+            background-color: var(--discord-red);
+        }
+        
+        .badge-warning {
+            background-color: #faa61a;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #18191c;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .logs-container, .mappings-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #202225;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .mappings-container {
+            max-height: 250px;
+            background-color: #36393f;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #36393f;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .expanded .collapsible-content {
+            max-height: 500px;
+        }
+        
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .collapsible-header::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .expanded .collapsible-header::after {
+            transform: rotate(180deg);
+        }
+        
+        /* Icon styles */
+        .icon {
+            margin-right: 6px;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #2e3338;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #202225;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #72767d;
+        }
+        
+        /* Debug panel */
+        #debug-info {
+            background-color: #202225 !important;
+            border-radius: 6px;
+            padding: 8px !important;
+            max-height: 150px !important;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Courier New', monospace !important;
+            font-size: 12px !important;
+            color: #dcddde !important;
         }
     </style>
 </head>
 <body>
 <h2>Discord Status Updater</h2>
 
-<div class="form-group">
-    <div style="display: flex; align-items: center;">
-        <label style="margin-right: 10px;">
-            <input type="checkbox" id="enabled"> Enable automatic status updates
+<div class="card">
+    <div class="card-header">
+        <span><i class="fa-solid fa-clock icon"></i>Automatic Updates</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="enabled">
+            <span class="toggle-slider"></span>
         </label>
-        <div style="margin-left: auto;">
-            <label for="update-frequency" style="font-size: 12px; margin-right: 5px;">Check every:</label>
-            <select id="update-frequency" style="padding: 2px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+    
+    <div class="form-group">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <label for="update-frequency" style="margin-bottom: 0;">Check frequency:</label>
+            <select id="update-frequency" style="width: auto; padding: 4px 8px;">
                 <option value="3000">3 seconds</option>
                 <option value="5000" selected>5 seconds</option>
                 <option value="10000">10 seconds</option>
@@ -61,80 +469,110 @@
     </div>
 </div>
 
-<div class="form-group">
-    <label for="discord-token">Discord Token:</label>
-    <div style="display: flex; margin-bottom: 5px;">
-        <input type="text" id="discord-token" placeholder="Enter your Discord token" style="flex: 1; margin-right: 5px;">
-        <button id="fetch-token" style="background-color: #43b581;">Fetch Token</button>
-    </div>
-    <div style="display: flex; margin-bottom: 5px; margin-top: 5px;">
-        <button id="validate-token" style="background-color: #ff7f50; margin-right: 5px;">Validate Token</button>
-        <span id="validation-result" style="margin-left: 5px; align-self: center; font-size: 14px;"></span>
-        <button id="toggle-debug" style="background-color: #7289da; margin-left: auto; font-size: 12px;">Show Debug</button>
-    </div>
-    <div id="debug-info" style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; display: none;"></div>
-    <small>Warning: Never share your Discord token with anyone. Your token is stored only in your browser and never sent to any third parties.</small>
-</div>
-
-<div class="form-group">
-    <label>Current Discord Status:</label>
-    <div id="current-status-container" style="display: flex; align-items: center; margin-top: 5px;">
-        <div id="current-status" style="background-color: #f5f5f5; padding: 8px; border-radius: 4px; flex: 1; min-height: 20px;">
-            Not available
-        </div>
-        <button id="refresh-status" style="margin-left: 5px; background-color: #7289da;">Refresh</button>
+<div class="card">
+    <div class="card-header">
+        <i class="fa-brands fa-discord icon"></i>Discord Account
     </div>
     
-    <div style="margin-top: 10px;">
-        <label for="edit-status">Edit Status:</label>
-        <div style="display: flex; margin-top: 5px;">
-            <input type="text" id="edit-status" placeholder="Enter new status" style="flex: 1; margin-right: 5px;">
-            <button id="update-status" style="background-color: #43b581;">Update</button>
+    <div class="form-group">
+        <label for="discord-token">
+            Discord Token 
+            <span class="tooltip"><i class="fa-solid fa-circle-info"></i>
+                <span class="tooltip-text">Your Discord token is stored only in your browser and never sent to any third parties. Never share your token with anyone.</span>
+            </span>
+        </label>
+        <div style="display: flex; margin-bottom: 8px;">
+            <input type="password" id="discord-token" placeholder="Enter your Discord token" style="flex: 1; margin-right: 8px; font-family: monospace;">
+            <button id="fetch-token" class="btn-success"><i class="fa-solid fa-download"></i> Fetch</button>
+        </div>
+        <div style="display: flex; margin-bottom: 8px;">
+            <button id="validate-token" class="btn-secondary" style="margin-right: 8px;"><i class="fa-solid fa-check-circle"></i> Validate</button>
+            <span id="validation-result" style="align-self: center; font-size: 13px;"></span>
+            <button id="toggle-debug" class="btn-sm btn-secondary" style="margin-left: auto;"><i class="fa-solid fa-bug"></i></button>
+        </div>
+        <div id="debug-info" style="display: none;"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fa-solid fa-message icon"></i>Status Management
+    </div>
+    
+    <div class="form-group">
+        <label>Current Discord Status</label>
+        <div id="current-status-container" style="display: flex; align-items: center; margin-top: 6px;">
+            <div id="current-status" style="background-color: #36393f; padding: 10px; border-radius: 6px; flex: 1; min-height: 20px;">
+                Not available
+            </div>
+            <button id="refresh-status" class="btn-secondary btn-icon" style="margin-left: 8px;"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+        
+        <label for="edit-status" style="margin-top: 12px;">Edit Status</label>
+        <div style="display: flex; margin-top: 6px;">
+            <input type="text" id="edit-status" placeholder="Enter new status" style="flex: 1; margin-right: 8px;">
+            <button id="update-status" class="btn-success"><i class="fa-solid fa-pen-to-square"></i> Update</button>
         </div>
     </div>
 </div>
 
-<div class="form-group">
-    <label>Status Mappings:</label>
-    <div style="margin-bottom: 10px; font-size: 12px; color: #666;">
-        <p>Match URLs with plain text or regex patterns:</p>
-        <ul style="margin-top: 5px; padding-left: 20px;">
-            <li>Simple: <code>youtube.com</code> matches any URL containing that text</li>
-            <li>Regex: <code>/prompt/i</code> matches URLs containing "prompt" case-insensitive</li>
-            <li>Regex: <code>/course|class|learn/i</code> matches URLs with any of these words</li>
-        </ul>
-    </div>
-    <div id="status-mappings-container"></div>
-    <div style="margin-top: 10px; margin-bottom: 10px;">
-        <details>
-            <summary style="cursor: pointer; color: #7289da;">Test your regex pattern</summary>
-            <div style="padding: 10px; margin-top: 5px; background-color: #f8f9fa; border-radius: 4px;">
-                <div style="display: flex; margin-bottom: 5px;">
-                    <input type="text" id="test-pattern" placeholder="Regex pattern (e.g., /prompt/i)" style="flex: 1; margin-right: 5px;">
-                    <input type="text" id="test-url" placeholder="URL to test against" style="flex: 1;">
+<div class="card">
+    <div class="collapsible">
+        <div class="card-header collapsible-header">
+            <span><i class="fa-solid fa-map icon"></i>Status Mappings</span>
+        </div>
+        <div class="collapsible-content">
+            <div class="form-group">
+                <div style="font-size: 13px; color: #b9bbbe; margin-bottom: 12px;">
+                    <p style="margin-top: 0; margin-bottom: 8px;">Match URLs with plain text or regex patterns:</p>
+                    <ul style="margin: 0; padding-left: 20px; margin-bottom: 8px;">
+                        <li><code style="background: #202225; padding: 2px 4px; border-radius: 3px;">youtube.com</code> - matches any URL containing that text</li>
+                        <li><code style="background: #202225; padding: 2px 4px; border-radius: 3px;">/prompt/i</code> - matches URLs containing "prompt" (case-insensitive)</li>
+                        <li><code style="background: #202225; padding: 2px 4px; border-radius: 3px;">/course|class|learn/i</code> - matches URLs with any of these words</li>
+                    </ul>
                 </div>
-                <button id="test-regex" style="background-color: #7289da; margin-top: 5px;">Test Pattern</button>
-                <div id="test-result" style="margin-top: 5px; padding: 5px; border-radius: 4px; display: none;"></div>
+                
+                <div id="status-mappings-container" class="mappings-container"></div>
+                
+                <div class="add-mapping" style="display: flex; gap: 8px; margin-top: 12px;">
+                    <div style="display: flex; margin-bottom: 16px; justify-content: space-between; align-items: center;">
+                        <button id="save-settings" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+                        <span id="save-status" style="margin-left: 10px; align-self: center; display: none; padding: 5px 10px; border-radius: 4px;"></span>
+                    </div>
+                    <button id="add-mapping" class="btn-success"><i class="fa-solid fa-plus"></i> Add New Mapping</button>
+                </div>
             </div>
-        </details>
-    </div>
-    <div class="add-mapping">
-        <button id="add-mapping">Add Mapping</button>
+        </div>
     </div>
 </div>
 
-<div style="display: flex; margin-bottom: 15px;">
-    <button id="save-settings">Save Settings</button>
-    <span id="save-status" style="margin-left: 10px; align-self: center; display: none; padding: 5px 10px; border-radius: 4px;"></span>
+<div style="margin-top: 12px;">
+    <details>
+        <summary style="cursor: pointer; color: #7289da;"><i class="fa-solid fa-flask"></i> Test your regex pattern</summary>
+        <div style="padding: 12px; margin-top: 8px; background-color: #36393f; border-radius: 6px;">
+            <div style="display: flex; margin-bottom: 8px;">
+                <input type="text" id="test-pattern" placeholder="Regex pattern (e.g., /prompt/i)" style="flex: 1; margin-right: 8px;">
+                <input type="text" id="test-url" placeholder="URL to test against" style="flex: 1;">
+            </div>
+            <button id="test-regex" class="btn-secondary" style="width: 100%;"><i class="fa-solid fa-vial"></i> Test Pattern</button>
+            <div id="test-result" style="margin-top: 8px; padding: 8px; border-radius: 4px; display: none;"></div>
+        </div>
+    </details>
 </div>
 
-<div class="form-group">
-    <label>Status Update Logs:</label>
-    <div id="status-logs" style="background-color: #f8f9fa; padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px;">
-        <div class="log-entry" style="color: #888;">No status updates logged yet</div>
-    </div>
-    <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
-        <button id="clear-logs" style="background-color: #99aab5; font-size: 12px;">Clear Logs</button>
+<div class="card">
+    <div class="collapsible">
+        <div class="card-header collapsible-header">
+            <span><i class="fa-solid fa-list icon"></i>Activity Logs</span>
+        </div>
+        <div class="collapsible-content">
+            <div class="logs-container" id="status-logs">
+                <div class="log-entry" style="color: #72767d;">No status updates logged yet</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                <button id="clear-logs" class="btn-sm btn-secondary"><i class="fa-solid fa-trash-can"></i> Clear Logs</button>
+            </div>
+        </div>
     </div>
 </div>
 

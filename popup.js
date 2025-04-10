@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Set up collapsible sections
+    setupCollapsibleSections();
+    
     // Add toggle debug button handler
     document.getElementById('toggle-debug').addEventListener('click', () => {
         const debugInfo = document.getElementById('debug-info');
@@ -9,8 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleButton.textContent = 'Hide Debug';
         } else {
             debugInfo.style.display = 'none';
-            toggleButton.textContent = 'Show Debug';
+            toggleButton.textContent = 'Debug';
         }
+    });
+
+    // Toggle password visibility for token field
+    const tokenField = document.getElementById('discord-token');
+    tokenField.addEventListener('dblclick', () => {
+        tokenField.type = tokenField.type === 'password' ? 'text' : 'password';
     });
     
     // Load saved settings
@@ -59,6 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateFrequency = parseInt(document.getElementById('update-frequency').value, 10);
         const saveStatus = document.getElementById('save-status');
 
+        // Add loading animation
+        const saveButton = document.getElementById('save-settings');
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
         // Collect all mappings from UI and validate patterns
         const statusMappings = [];
         const mappingContainers = document.querySelectorAll('.status-mapping');
@@ -96,6 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStatus.style.backgroundColor = '#f04747';
             saveStatus.style.color = 'white';
             
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Settings';
+            
             setTimeout(() => {
                 saveStatus.style.display = 'none';
             }, 3000);
@@ -114,6 +131,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStatus.textContent = 'Settings saved!';
             saveStatus.style.backgroundColor = '#43b581';
             saveStatus.style.color = 'white';
+            
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Settings';
             
             // Hide the message after 3 seconds
             setTimeout(() => {
@@ -147,10 +167,117 @@ document.addEventListener('DOMContentLoaded', () => {
         const mappingsContainer = document.getElementById('status-mappings-container');
         const newMapping = createMappingElement({ urlPattern: '', status: '' });
         mappingsContainer.appendChild(newMapping);
+        
+        // Ensure the section is expanded
+        const parentCollapsible = document.querySelector('.card .collapsible');
+        if (parentCollapsible && !parentCollapsible.classList.contains('expanded')) {
+            parentCollapsible.classList.add('expanded');
+        }
+        
+        // Focus the new url pattern input
+        setTimeout(() => {
+            newMapping.querySelector('.url-pattern').focus();
+        }, 100);
+        
+        // Animate the new mapping
+        newMapping.classList.add('fade-in');
+    });
+    
+    // Define individual template mappings
+    const templateMappings = {
+        empty: [],
+        youtube: [
+            { urlPattern: "youtube.com", status: "Watching YouTube" }
+        ],
+        github: [
+            { urlPattern: "github.com", status: "Working on code" }
+        ],
+        netflix: [
+            { urlPattern: "netflix.com", status: "Watching Netflix" }
+        ],
+        twitter: [
+            { urlPattern: "twitter.com", status: "Checking Twitter" }
+        ],
+        ai: [
+            { urlPattern: "/prompt|ai|gpt|llm/i", status: "Learning AI and ML" }
+        ],
+        docs: [
+            { urlPattern: "docs.google.com", status: "Working on documents" }
+        ],
+        productivity: [
+            { urlPattern: "docs.google.com", status: "Working on documents" },
+            { urlPattern: "github.com", status: "Working on code" },
+            { urlPattern: "notion.so", status: "Taking notes" },
+            { urlPattern: "trello.com", status: "Managing tasks" },
+            { urlPattern: "slack.com", status: "Team communication" }
+        ],
+        learning: [
+            { urlPattern: "/udemy|coursera|edx|pluralsight/i", status: "Taking an online course" },
+            { urlPattern: "stackoverflow.com", status: "Solving coding problems" },
+            { urlPattern: "wikipedia.org", status: "Researching" },
+            { urlPattern: "/medium|dev.to|hashnode/i", status: "Reading tech articles" },
+            { urlPattern: "youtube.com/.*tutorial", status: "Learning from tutorials" }
+        ]
+    };
+    
+    // Handle template selections
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const templateName = item.getAttribute('data-template');
+            const mappings = templateMappings[templateName];
+            
+            if (mappings) {
+                const mappingsContainer = document.getElementById('status-mappings-container');
+                
+                // For the empty template, don't add anything
+                if (templateName === 'empty') {
+                    const newMapping = createMappingElement({ urlPattern: '', status: '' });
+                    mappingsContainer.appendChild(newMapping);
+                    newMapping.classList.add('fade-in');
+                    newMapping.querySelector('.url-pattern').focus();
+                    return;
+                }
+                
+                // Add each mapping
+                mappings.forEach(mapping => {
+                    const newMapping = createMappingElement(mapping);
+                    mappingsContainer.appendChild(newMapping);
+                    newMapping.classList.add('fade-in');
+                });
+                
+                // Ensure the section is expanded
+                const parentCollapsible = document.querySelector('.card .collapsible');
+                if (parentCollapsible && !parentCollapsible.classList.contains('expanded')) {
+                    parentCollapsible.classList.add('expanded');
+                }
+                
+                // Scroll to the new mappings
+                setTimeout(() => {
+                    const scrollHeight = mappingsContainer.scrollHeight;
+                    mappingsContainer.scrollTop = scrollHeight;
+                }, 100);
+                
+                // Show success message
+                const saveStatus = document.getElementById('save-status');
+                saveStatus.textContent = `Added ${mappings.length} mapping${mappings.length > 1 ? 's' : ''}!`;
+                saveStatus.style.display = 'inline-block';
+                saveStatus.style.backgroundColor = '#43b581';
+                saveStatus.style.color = 'white';
+                
+                // Hide the message after 3 seconds
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
+            }
+        });
     });
     
     // Fetch Discord token
     document.getElementById('fetch-token').addEventListener('click', () => {
+        const fetchButton = document.getElementById('fetch-token');
+        fetchButton.disabled = true;
+        fetchButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+        
         // First check if Discord is already open in any tab
         chrome.tabs.query({ url: "*://*.discord.com/*" }, (tabs) => {
             if (tabs && tabs.length > 0) {
@@ -180,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('validate-token').addEventListener('click', () => {
         let token = document.getElementById('discord-token').value;
         const validationResult = document.getElementById('validation-result');
+        const validateButton = document.getElementById('validate-token');
         const debugContainer = document.getElementById('debug-info') || document.createElement('div');
         
         // Create debug container if it doesn't exist
@@ -214,6 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
             validationResult.style.color = '#ff0000';
             return;
         }
+        
+        // Disable the button and show loading state
+        validateButton.disabled = true;
+        validateButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validating...';
         
         // Log token length and format
         logDebug(`Token length: ${token.length}`);
@@ -290,40 +422,53 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(response => {
             logDebug(`API response status: ${response.status}`);
             
+            validateButton.disabled = false;
+            validateButton.innerHTML = '<i class="fa-solid fa-check-circle"></i> Validate';
+            
             if (response.ok) {
                 return response.json().then(data => {
                     logDebug(`User data received: ${data.username} (${data.id})`);
                     
                     // Even if validation succeeds, check if token appears complete
                     if (!isTokenComplete(token)) {
-                        validationResult.textContent = `Valid (${data.username}) - Warning: Token appears truncated`;
-                        validationResult.style.color = '#e67e22'; // Orange warning color
+                        validationResult.innerHTML = `<span class="badge badge-warning">Valid (${data.username}) - Token may be truncated</span>`;
                     } else {
-                        validationResult.textContent = `Valid (${data.username})`;
-                        validationResult.style.color = '#43b581';
+                        validationResult.innerHTML = `<span class="badge badge-success">Valid (${data.username})</span>`;
                     }
                 });
             } else {
                 return response.text().then(text => {
                     logDebug(`Error response: ${text}`);
-                    validationResult.textContent = `Invalid token (${response.status})`;
-                    validationResult.style.color = '#ff0000';
+                    validationResult.innerHTML = `<span class="badge badge-error">Invalid token (${response.status})</span>`;
                 });
             }
         })
         .catch(error => {
             logDebug(`Error: ${error.message}`);
             console.error('Error validating token:', error);
-            validationResult.textContent = 'Error validating';
-            validationResult.style.color = '#ff0000';
+            validationResult.innerHTML = `<span class="badge badge-error">Error validating</span>`;
+            
+            validateButton.disabled = false;
+            validateButton.innerHTML = '<i class="fa-solid fa-check-circle"></i> Validate';
         });
     });
     
     // Refresh current status
     document.getElementById('refresh-status').addEventListener('click', () => {
         const token = document.getElementById('discord-token').value;
+        const refreshButton = document.getElementById('refresh-status');
+        
         if (token) {
-            fetchCurrentStatus(token);
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i>';
+            
+            fetchCurrentStatus(token)
+                .finally(() => {
+                    setTimeout(() => {
+                        refreshButton.disabled = false;
+                        refreshButton.innerHTML = '<i class="fa-solid fa-rotate"></i>';
+                    }, 1000);
+                });
         } else {
             alert('Please enter a Discord token first');
         }
@@ -366,6 +511,10 @@ document.addEventListener('DOMContentLoaded', () => {
             target: { tabId: tabId },
             function: fetchDiscordToken
         }, (results) => {
+            const fetchButton = document.getElementById('fetch-token');
+            fetchButton.disabled = false;
+            fetchButton.innerHTML = '<i class="fa-solid fa-download"></i> Fetch';
+            
             if (chrome.runtime.lastError) {
                 console.error(chrome.runtime.lastError.message);
                 alert(`Error: ${chrome.runtime.lastError.message}`);
@@ -438,7 +587,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (closeTabAfter) {
                     chrome.tabs.remove(tabId);
                 }
-                alert('Discord token successfully retrieved!');
+                
+                // Show success message
+                const saveStatus = document.getElementById('save-status');
+                saveStatus.textContent = 'Token retrieved successfully!';
+                saveStatus.style.display = 'inline-block';
+                saveStatus.style.backgroundColor = '#43b581';
+                saveStatus.style.color = 'white';
+                
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
+                
                 // Fetch current status with the new token
                 fetchCurrentStatus(token);
             } else {
@@ -453,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Show loading state
         statusContainer.textContent = 'Loading...';
-        statusContainer.style.backgroundColor = '#f0f0f0';
+        statusContainer.style.backgroundColor = '#40444b';
         
         // Handle special format {userId:token}
         const keyValueMatch = token.match(/^\{(\d+):([^}]+)\}$/);
@@ -462,37 +622,44 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Extracted token from key-value format for status fetch");
         }
         
-        // Call Discord API to get user settings
-        fetch('https://discord.com/api/v9/users/@me/settings', {
-            method: 'GET',
-            headers: {
-                'Authorization': token
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json().then(data => {
-                    if (data.custom_status && data.custom_status.text) {
-                        statusContainer.textContent = data.custom_status.text;
-                        statusContainer.style.backgroundColor = '#e3f2fd';
-                        
-                        // Pre-fill the edit field with current status
-                        document.getElementById('edit-status').value = data.custom_status.text;
-                    } else {
-                        statusContainer.textContent = 'No custom status set';
-                        statusContainer.style.backgroundColor = '#f5f5f5';
-                        document.getElementById('edit-status').value = '';
-                    }
-                });
-            } else {
-                statusContainer.textContent = 'Failed to fetch status';
-                statusContainer.style.backgroundColor = '#ffebee';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching Discord status:', error);
-            statusContainer.textContent = 'Error fetching status';
-            statusContainer.style.backgroundColor = '#ffebee';
+        // Return a promise for better control flow
+        return new Promise((resolve, reject) => {
+            // Call Discord API to get user settings
+            fetch('https://discord.com/api/v9/users/@me/settings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json().then(data => {
+                        if (data.custom_status && data.custom_status.text) {
+                            statusContainer.textContent = data.custom_status.text;
+                            statusContainer.style.backgroundColor = '#36393f';
+                            
+                            // Pre-fill the edit field with current status
+                            document.getElementById('edit-status').value = data.custom_status.text;
+                            resolve(data.custom_status.text);
+                        } else {
+                            statusContainer.textContent = 'No custom status set';
+                            statusContainer.style.backgroundColor = '#36393f';
+                            document.getElementById('edit-status').value = '';
+                            resolve(null);
+                        }
+                    });
+                } else {
+                    statusContainer.textContent = 'Failed to fetch status';
+                    statusContainer.style.backgroundColor = '#f04747';
+                    reject(new Error(`Failed to fetch status: ${response.status}`));
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching Discord status:', error);
+                statusContainer.textContent = 'Error fetching status';
+                statusContainer.style.backgroundColor = '#f04747';
+                reject(error);
+            });
         });
     }
     
@@ -503,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Show loading state
         updateButton.disabled = true;
-        updateButton.textContent = 'Updating...';
+        updateButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
         
         // Handle special format {userId:token}
         const keyValueMatch = token.match(/^\{(\d+):([^}]+)\}$/);
@@ -511,10 +678,6 @@ document.addEventListener('DOMContentLoaded', () => {
             token = keyValueMatch[2]; // Extract just the token part
             console.log("Extracted token from key-value format for status update");
         }
-        
-        // Two approaches to update status:
-        // 1. Direct API call from popup
-        // 2. Send message to background script to handle update and notification
         
         // First approach: direct API call
         fetch('https://discord.com/api/v9/users/@me/settings', {
@@ -533,8 +696,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 // Update was successful
                 statusContainer.textContent = statusText;
-                statusContainer.style.backgroundColor = '#e3f2fd';
-                updateButton.textContent = 'Updated!';
+                statusContainer.style.backgroundColor = '#36393f';
+                updateButton.innerHTML = '<i class="fa-solid fa-check"></i> Updated!';
                 
                 // Also notify background script to trigger notification
                 chrome.runtime.sendMessage({ 
@@ -543,26 +706,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 setTimeout(() => {
-                    updateButton.textContent = 'Update';
+                    updateButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Update';
                     updateButton.disabled = false;
                 }, 2000);
             } else {
                 // Update failed
-                updateButton.textContent = 'Failed';
+                updateButton.innerHTML = '<i class="fa-solid fa-exclamation-triangle"></i> Failed';
                 setTimeout(() => {
-                    updateButton.textContent = 'Update';
+                    updateButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Update';
                     updateButton.disabled = false;
                 }, 2000);
                 console.error('Failed to update Discord status:', response.status);
             }
         })
         .catch(error => {
-            updateButton.textContent = 'Error';
+            updateButton.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Error';
             setTimeout(() => {
-                updateButton.textContent = 'Update';
+                updateButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Update';
                 updateButton.disabled = false;
             }, 2000);
             console.error('Error updating Discord status:', error);
+        });
+    }
+    
+    // Setup collapsible sections
+    function setupCollapsibleSections() {
+        document.querySelectorAll('.collapsible').forEach(collapsible => {
+            // Initially expand status mappings and collapse logs
+            if (collapsible.querySelector('.card-header').textContent.includes('Status Mappings')) {
+                collapsible.classList.add('expanded');
+            }
+            
+            collapsible.querySelector('.card-header').addEventListener('click', () => {
+                collapsible.classList.toggle('expanded');
+            });
         });
     }
 });
@@ -597,12 +774,12 @@ function createMappingElement(mapping) {
     container.className = 'status-mapping';
 
     container.innerHTML = `
-    <div style="display: flex; margin-bottom: 5px;">
-      <input type="text" class="url-pattern" placeholder="URL Pattern (e.g., youtube.com or /regex/i)" value="${mapping.urlPattern}" style="flex: 1; margin-right: 5px;">
+    <div style="display: flex; margin-bottom: 8px;">
+      <input type="text" class="url-pattern" placeholder="URL Pattern (e.g., youtube.com or /regex/i)" value="${mapping.urlPattern}" style="flex: 1; margin-right: 8px;">
       <input type="text" class="status-text" placeholder="Status Text" value="${mapping.status}" style="flex: 1;">
     </div>
     <div class="pattern-validation" style="margin-bottom: 5px; font-size: 12px; color: #f04747; display: none;"></div>
-    <button class="remove-mapping" style="background-color: #f04747;">Remove</button>
+    <button class="remove-mapping btn-danger btn-sm"><i class="fa-solid fa-trash-can"></i> Remove</button>
   `;
 
     // Add validation for regex patterns
@@ -628,8 +805,17 @@ function createMappingElement(mapping) {
         }
     });
 
-    container.querySelector('.remove-mapping').addEventListener('click', () => {
-        container.remove();
+    container.querySelector('.remove-mapping').addEventListener('click', (e) => {
+        // Add fade-out animation before removing
+        container.style.opacity = '0';
+        container.style.transform = 'translateX(10px)';
+        container.style.transition = 'opacity 0.3s, transform 0.3s';
+        
+        setTimeout(() => {
+            container.remove();
+        }, 300);
+        
+        e.stopPropagation();
     });
 
     return container;
@@ -702,7 +888,7 @@ function addLogEntry(logData) {
     
     // Format with timestamp
     const timestamp = logData.timestamp || new Date().toLocaleTimeString();
-    logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${typeColor};">${logData.message}</span>`;
+    logEntry.innerHTML = `<span style="color: #72767d;">[${timestamp}]</span> <span style="color: ${typeColor};">${logData.message}</span>`;
     
     // Add to container (at the top)
     logsContainer.insertBefore(logEntry, logsContainer.firstChild);
@@ -731,6 +917,12 @@ function addLogEntry(logData) {
         // Save back to storage
         chrome.storage.sync.set({ statusLogs: logs });
     });
+    
+    // Ensure the logs section is expanded when there's new activity
+    const logsCollapsible = document.querySelector('.card .collapsible:last-child');
+    if (logsCollapsible && !logsCollapsible.classList.contains('expanded')) {
+        logsCollapsible.classList.add('expanded');
+    }
 }
 
 // Listen for status update logs from background script
@@ -746,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear logs button
     document.getElementById('clear-logs').addEventListener('click', () => {
         const logsContainer = document.getElementById('status-logs');
-        logsContainer.innerHTML = '<div class="log-entry" style="color: #888;">No status updates logged yet</div>';
+        logsContainer.innerHTML = '<div class="log-entry" style="color: #72767d;">No status updates logged yet</div>';
         
         // Clear logs in storage
         chrome.storage.sync.set({ statusLogs: [] }, () => {
@@ -766,8 +958,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pattern || !url) {
             resultDiv.textContent = 'Please enter both a pattern and a URL to test';
             resultDiv.style.display = 'block';
-            resultDiv.style.backgroundColor = '#f8f9fa';
-            resultDiv.style.color = '#333';
+            resultDiv.style.backgroundColor = '#40444b';
+            resultDiv.style.color = '#dcddde';
             return;
         }
         
@@ -805,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultDiv.style.color = 'white';
             } else {
                 resultDiv.textContent = `${isRegex ? 'Regex' : 'Pattern'} does NOT match URL.`;
-                resultDiv.style.backgroundColor = '#ff7f50';
+                resultDiv.style.backgroundColor = '#f04747';
                 resultDiv.style.color = 'white';
             }
         }
