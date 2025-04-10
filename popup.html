@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Discord Status Updater</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 5px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #5865F2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .status-mapping {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .add-mapping {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<h2>Discord Status Updater</h2>
+
+<div class="form-group">
+    <div style="display: flex; align-items: center;">
+        <label style="margin-right: 10px;">
+            <input type="checkbox" id="enabled"> Enable automatic status updates
+        </label>
+        <div style="margin-left: auto;">
+            <label for="update-frequency" style="font-size: 12px; margin-right: 5px;">Check every:</label>
+            <select id="update-frequency" style="padding: 2px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="3000">3 seconds</option>
+                <option value="5000" selected>5 seconds</option>
+                <option value="10000">10 seconds</option>
+                <option value="30000">30 seconds</option>
+                <option value="60000">1 minute</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="discord-token">Discord Token:</label>
+    <div style="display: flex; margin-bottom: 5px;">
+        <input type="text" id="discord-token" placeholder="Enter your Discord token" style="flex: 1; margin-right: 5px;">
+        <button id="fetch-token" style="background-color: #43b581;">Fetch Token</button>
+    </div>
+    <div style="display: flex; margin-bottom: 5px; margin-top: 5px;">
+        <button id="validate-token" style="background-color: #ff7f50; margin-right: 5px;">Validate Token</button>
+        <span id="validation-result" style="margin-left: 5px; align-self: center; font-size: 14px;"></span>
+        <button id="toggle-debug" style="background-color: #7289da; margin-left: auto; font-size: 12px;">Show Debug</button>
+    </div>
+    <div id="debug-info" style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; display: none;"></div>
+    <small>Warning: Never share your Discord token with anyone. Your token is stored only in your browser and never sent to any third parties.</small>
+</div>
+
+<div class="form-group">
+    <label>Current Discord Status:</label>
+    <div id="current-status-container" style="display: flex; align-items: center; margin-top: 5px;">
+        <div id="current-status" style="background-color: #f5f5f5; padding: 8px; border-radius: 4px; flex: 1; min-height: 20px;">
+            Not available
+        </div>
+        <button id="refresh-status" style="margin-left: 5px; background-color: #7289da;">Refresh</button>
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <label for="edit-status">Edit Status:</label>
+        <div style="display: flex; margin-top: 5px;">
+            <input type="text" id="edit-status" placeholder="Enter new status" style="flex: 1; margin-right: 5px;">
+            <button id="update-status" style="background-color: #43b581;">Update</button>
+        </div>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Status Mappings:</label>
+    <div style="margin-bottom: 10px; font-size: 12px; color: #666;">
+        <p>Match URLs with plain text or regex patterns:</p>
+        <ul style="margin-top: 5px; padding-left: 20px;">
+            <li>Simple: <code>youtube.com</code> matches any URL containing that text</li>
+            <li>Regex: <code>/prompt/i</code> matches URLs containing "prompt" case-insensitive</li>
+            <li>Regex: <code>/course|class|learn/i</code> matches URLs with any of these words</li>
+        </ul>
+    </div>
+    <div id="status-mappings-container"></div>
+    <div style="margin-top: 10px; margin-bottom: 10px;">
+        <details>
+            <summary style="cursor: pointer; color: #7289da;">Test your regex pattern</summary>
+            <div style="padding: 10px; margin-top: 5px; background-color: #f8f9fa; border-radius: 4px;">
+                <div style="display: flex; margin-bottom: 5px;">
+                    <input type="text" id="test-pattern" placeholder="Regex pattern (e.g., /prompt/i)" style="flex: 1; margin-right: 5px;">
+                    <input type="text" id="test-url" placeholder="URL to test against" style="flex: 1;">
+                </div>
+                <button id="test-regex" style="background-color: #7289da; margin-top: 5px;">Test Pattern</button>
+                <div id="test-result" style="margin-top: 5px; padding: 5px; border-radius: 4px; display: none;"></div>
+            </div>
+        </details>
+    </div>
+    <div class="add-mapping">
+        <button id="add-mapping">Add Mapping</button>
+    </div>
+</div>
+
+<div style="display: flex; margin-bottom: 15px;">
+    <button id="save-settings">Save Settings</button>
+    <span id="save-status" style="margin-left: 10px; align-self: center; display: none; padding: 5px 10px; border-radius: 4px;"></span>
+</div>
+
+<div class="form-group">
+    <label>Status Update Logs:</label>
+    <div id="status-logs" style="background-color: #f8f9fa; padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+        <div class="log-entry" style="color: #888;">No status updates logged yet</div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
+        <button id="clear-logs" style="background-color: #99aab5; font-size: 12px;">Clear Logs</button>
+    </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

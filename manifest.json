@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Discord Status Updater",
+  "version": "1.0",
+  "description": "Updates Discord status based on active browser tabs",
+  "permissions": [
+    "tabs",
+    "storage",
+    "webNavigation",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.discord.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png"
+    }
+  }
+}
