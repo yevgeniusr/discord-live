@@ -1004,7 +1004,367 @@ document.addEventListener('DOMContentLoaded', () => {
         
         resultDiv.style.display = 'block';
     });
+    
+    // Load meme generator settings
+    chrome.storage.sync.get([
+        'memeEnabled',
+        'openaiKey',
+        'memeFrequency',
+        'autoDownload',
+        'memeFolder',
+        'lastMemeInfo'
+    ], (result) => {
+        // Set meme generator settings
+        document.getElementById('meme-enabled').checked = result.memeEnabled || false;
+        document.getElementById('openai-key').value = result.openaiKey || '';
+        
+        // Set auto-download option (default to true if not set)
+        document.getElementById('auto-download').checked = result.autoDownload !== false;
+        
+        // Set meme folder (default to "memes")
+        document.getElementById('meme-folder').value = result.memeFolder || "memes";
+        
+        // Set meme frequency if available
+        const memeFrequencySelect = document.getElementById('meme-frequency');
+        if (result.memeFrequency) {
+            memeFrequencySelect.value = result.memeFrequency.toString();
+        }
+        
+        // Display last meme if available
+        if (result.lastMemeInfo) {
+            displayLastMeme(result.lastMemeInfo);
+        }
+    });
+    
+    // Handle meme generator toggle
+    document.getElementById('meme-enabled').addEventListener('change', (e) => {
+        const memeEnabled = e.target.checked;
+        chrome.storage.sync.set({ memeEnabled }, () => {
+            console.log(`[Discord Status] Meme generator ${memeEnabled ? 'enabled' : 'disabled'}`);
+            
+            // Notify background script
+            chrome.runtime.sendMessage({ 
+                action: 'toggleMemeGenerator', 
+                enabled: memeEnabled 
+            });
+            
+            // Add log entry
+            addLogEntry({
+                type: memeEnabled ? 'info' : 'warning',
+                message: `Meme generator ${memeEnabled ? 'enabled' : 'disabled'}`,
+                timestamp: new Date().toLocaleTimeString()
+            });
+        });
+    });
+    
+    // Save OpenAI API key
+    document.getElementById('openai-key').addEventListener('blur', (e) => {
+        const openaiKey = e.target.value.trim();
+        if (openaiKey) {
+            chrome.storage.sync.set({ openaiKey }, () => {
+                console.log('[Discord Status] OpenAI API key saved');
+            });
+        }
+    });
+    
+    // Validate OpenAI API key
+    document.getElementById('validate-api-key').addEventListener('click', () => {
+        const apiKey = document.getElementById('openai-key').value.trim();
+        const button = document.getElementById('validate-api-key');
+        
+        if (!apiKey) {
+            alert('Please enter an OpenAI API key');
+            return;
+        }
+        
+        // Disable button and show loading state
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        // Send validation request to background script
+        chrome.runtime.sendMessage({ 
+            action: 'validateOpenAIKey', 
+            apiKey: apiKey 
+        }, (response) => {
+            button.disabled = false;
+            
+            if (response && response.valid) {
+                button.innerHTML = '<i class="fa-solid fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+                }, 2000);
+                
+                // Add success log
+                addLogEntry({
+                    type: 'success',
+                    message: 'OpenAI API key validated successfully',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            } else {
+                button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+                }, 2000);
+                
+                // Display error message
+                alert(`API key validation failed: ${response ? response.error : 'Unknown error'}`);
+                
+                // Add error log
+                addLogEntry({
+                    type: 'error',
+                    message: `API key validation failed: ${response ? response.error : 'Unknown error'}`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }
+        });
+    });
+    
+    // Handle meme frequency change
+    document.getElementById('meme-frequency').addEventListener('change', (e) => {
+        const memeFrequency = parseInt(e.target.value, 10);
+        chrome.storage.sync.set({ memeFrequency }, () => {
+            console.log(`[Discord Status] Meme frequency set to ${memeFrequency / 60000} minutes`);
+            
+            // Notify background script
+            chrome.runtime.sendMessage({ 
+                action: 'updateMemeFrequency', 
+                frequency: memeFrequency 
+            });
+        });
+    });
+    
+    // Handle auto-download toggle
+    document.getElementById('auto-download').addEventListener('change', (e) => {
+        const autoDownload = e.target.checked;
+        chrome.storage.sync.set({ autoDownload }, () => {
+            console.log(`[Discord Status] Auto-download memes ${autoDownload ? 'enabled' : 'disabled'}`);
+            
+            // Add log entry
+            addLogEntry({
+                type: 'info',
+                message: `Auto-download memes ${autoDownload ? 'enabled' : 'disabled'}`,
+                timestamp: new Date().toLocaleTimeString()
+            });
+        });
+    });
+    
+    // Handle test meme generation
+    // Save meme folder when changed
+    document.getElementById('meme-folder').addEventListener('blur', (e) => {
+        const memeFolder = e.target.value.trim() || "memes";
+        chrome.storage.sync.set({ memeFolder }, () => {
+            console.log('[Discord Status] Meme folder set to:', memeFolder);
+        });
+    });
+    
+    document.getElementById('test-meme').addEventListener('click', () => {
+        const button = document.getElementById('test-meme');
+        const openaiKey = document.getElementById('openai-key').value.trim();
+        const autoDownload = document.getElementById('auto-download').checked;
+        const memeFolder = document.getElementById('meme-folder').value.trim() || "memes";
+        
+        if (!openaiKey) {
+            alert('Please enter your OpenAI API key first');
+            return;
+        }
+        
+        // Show user what's happening
+        alert('The extension will now take a screenshot of your current tab and generate a meme using OpenAI.' + 
+              (autoDownload ? ' The meme will be saved to your Downloads folder.' : ' You can download the meme from the popup.'));
+        
+        // Disable button and show loading state
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        
+        // Save the key, folder, and auto-download setting
+        chrome.storage.sync.set({ 
+            openaiKey,
+            autoDownload,
+            memeFolder
+        }, () => {
+            // Set a timeout to reset the button in case the callback never executes
+            const timeout = setTimeout(() => {
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-solid fa-flask"></i> Generate Test Meme';
+                
+                alert('The meme generation request timed out. Please check your network connection or try again later.');
+                
+                addLogEntry({
+                    type: 'error',
+                    message: 'Meme generation timed out after 30 seconds',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }, 30000); // 30 second timeout
+            
+            // Request test meme generation
+            chrome.runtime.sendMessage({ 
+                action: 'generateTestMeme'
+            }, (response) => {
+                // Clear the timeout since we got a response
+                clearTimeout(timeout);
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-solid fa-flask"></i> Generate Test Meme';
+                
+                // Check if we got a valid response
+                if (!response) {
+                    console.error('[Discord Status] No response received from background script');
+                    
+                    alert('Failed to generate meme: No response from extension. Please check the console for errors and try reloading the extension.');
+                    
+                    addLogEntry({
+                        type: 'error',
+                        message: 'Meme generation failed: No response from background script',
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    return;
+                }
+                
+                if (response && response.success) {
+                    // Display the new meme
+                    displayLastMeme(response.memeInfo);
+                    
+                    // Add success log
+                    addLogEntry({
+                        type: 'success',
+                        message: 'Test meme generated successfully!' + (autoDownload ? ' Saved to Downloads folder.' : ''),
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    
+                    // Ensure meme generator toggle is enabled
+                    document.getElementById('meme-enabled').checked = true;
+                    chrome.storage.sync.set({ memeEnabled: true });
+                } else {
+                    // Get detailed error message
+                    const errorMsg = response ? response.error : 'Unknown error';
+                    
+                    // Display error message with more details
+                    let alertMessage = `Failed to generate test meme: ${errorMsg}`;
+                    
+                    // Add troubleshooting tips based on error message
+                    if (errorMsg.includes('API key')) {
+                        alertMessage += '\n\nTroubleshooting tips:\n- Check that your OpenAI API key is correct\n- Make sure your OpenAI account has access to GPT-4 Vision\n- Verify your API key has sufficient credits';
+                    } else if (errorMsg.includes('vision')) {
+                        alertMessage += '\n\nTroubleshooting tips:\n- Your OpenAI account might not have access to GPT-4 Vision API\n- Make sure your API key has access to the correct models';
+                    } else if (errorMsg.includes('timeout') || errorMsg.includes('image')) {
+                        alertMessage += '\n\nTroubleshooting tips:\n- The screenshot might be too large\n- Try again with a simpler webpage\n- Check if the page allows screenshots';
+                    }
+                    
+                    alert(alertMessage);
+                    
+                    // Add detailed error log
+                    addLogEntry({
+                        type: 'error',
+                        message: `Meme generation failed: ${errorMsg}`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    
+                    // Log more details to console for debugging
+                    console.error('[Discord Status] Meme generation failed details:', response);
+                }
+            });
+        });
+    });
+    
+    // Handle view memes button
+    document.getElementById('view-memes').addEventListener('click', () => {
+        // Try to open Downloads folder
+        chrome.downloads.showDefaultFolder();
+        
+        // Alert user where to find memes
+        alert('Your memes are saved in your Downloads folder.');
+    });
 });
+
+// Function to display the last generated meme
+function displayLastMeme(memeInfo) {
+    if (!memeInfo) return;
+    
+    const container = document.getElementById('last-meme-container');
+    const image = document.getElementById('last-meme-image');
+    const info = document.getElementById('last-meme-info');
+    const placeholder = document.getElementById('last-meme-placeholder');
+    
+    // Show the container
+    container.style.display = 'block';
+    
+    if (memeInfo.path) {
+        // Format timestamp
+        const timestamp = new Date(memeInfo.timestamp).toLocaleString();
+        
+        // Update info text
+        info.textContent = `Generated: ${timestamp} | Source: ${memeInfo.source || 'Unknown'}`;
+        info.textContent += ` | Text: "${memeInfo.memeText?.substring(0, 50)}${memeInfo.memeText?.length > 50 ? '...' : ''}"`;
+        
+        // Show image if available
+        if (memeInfo.dataUrl) {
+            // Show the image
+            image.src = memeInfo.dataUrl;
+            image.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            // Add download button if not already present
+            if (!document.getElementById('download-meme-button')) {
+                const downloadButton = document.createElement('button');
+                downloadButton.id = 'download-meme-button';
+                downloadButton.className = 'btn-success';
+                downloadButton.style.marginTop = '8px';
+                downloadButton.style.width = '100%';
+                downloadButton.innerHTML = '<i class="fa-solid fa-download"></i> Download Meme';
+                
+                downloadButton.addEventListener('click', () => {
+                    // Generate filename with timestamp
+                    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+                    const filename = `meme_${timestamp}.png`;
+                    
+                    // Create download link
+                    const a = document.createElement('a');
+                    a.href = memeInfo.dataUrl;
+                    a.download = filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    // Show success message
+                    alert('Meme downloaded to your Downloads folder');
+                    
+                    // Add log entry
+                    addLogEntry({
+                        type: 'success',
+                        message: 'Meme manually downloaded',
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                });
+                
+                // Add the button after the image
+                image.parentNode.insertBefore(downloadButton, image.nextSibling);
+            }
+        } else {
+            // When loaded from storage, dataUrl isn't available due to size
+            console.log('[Discord Status] No dataUrl for meme, showing placeholder');
+            image.style.display = 'none';
+            placeholder.textContent = 'Meme was saved to your Downloads folder';
+            placeholder.style.display = 'block';
+            
+            // Remove download button if present
+            const downloadButton = document.getElementById('download-meme-button');
+            if (downloadButton) {
+                downloadButton.remove();
+            }
+        }
+    } else {
+        // No meme available
+        image.style.display = 'none';
+        placeholder.style.display = 'block';
+        
+        // Remove download button if present
+        const downloadButton = document.getElementById('download-meme-button');
+        if (downloadButton) {
+            downloadButton.remove();
+        }
+    }
+}
 
 // Function to extract Discord token from local storage
 function fetchDiscordToken() {

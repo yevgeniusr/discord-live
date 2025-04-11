@@ -2,16 +2,19 @@
   "manifest_version": 3,
   "name": "Discord Status Updater",
   "version": "1.0",
-  "description": "Updates Discord status based on active browser tabs",
+  "description": "Updates Discord status based on active browser tabs and generates memes",
   "permissions": [
     "tabs",
     "storage",
     "webNavigation",
     "scripting",
-    "notifications"
+    "notifications",
+    "downloads",
+    "activeTab"
   ],
   "host_permissions": [
-    "https://*.discord.com/*"
+    "https://*.discord.com/*",
+    "https://*.openai.com/*"
   ],
   "background": {
     "service_worker": "background.js"

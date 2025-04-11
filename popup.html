@@ -494,6 +494,68 @@
     </div>
 </div>
 
+<!-- Meme Generator Card -->
+<div class="card">
+    <div class="collapsible">
+        <div class="card-header collapsible-header">
+            <span><i class="fa-solid fa-image icon"></i>Meme Generator</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="meme-enabled">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="collapsible-content">
+            <div class="form-group">
+                <label for="openai-key">
+                    OpenAI API Key
+                    <span class="tooltip"><i class="fa-solid fa-circle-info"></i>
+                        <span class="tooltip-text">Your OpenAI API key is required to generate memes. Visit openai.com to get a key.</span>
+                    </span>
+                </label>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <input type="password" id="openai-key" placeholder="Enter your OpenAI API key" style="flex: 1; margin-right: 8px; font-family: monospace;">
+                    <button id="validate-api-key" class="btn-secondary btn-sm"><i class="fa-solid fa-check-circle"></i></button>
+                </div>
+                
+                <label for="meme-frequency">Screenshot Frequency</label>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <select id="meme-frequency" style="width: auto; padding: 4px 8px;">
+                        <option value="60000">Every 1 minute</option>
+                        <option value="300000" selected>Every 5 minutes</option>
+                        <option value="600000">Every 10 minutes</option>
+                        <option value="1800000">Every 30 minutes</option>
+                        <option value="3600000">Every 1 hour</option>
+                    </select>
+                </div>
+                
+                <div class="checkbox-container" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="auto-download" checked>
+                    <label for="auto-download">Automatically download generated memes</label>
+                </div>
+
+                <label for="meme-folder">Meme Folder</label>
+                <div style="display: flex; margin-bottom: 12px;">
+                    <input type="text" id="meme-folder" placeholder="Folder name (e.g., memes)" value="memes" style="flex: 1;">
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+                    <button id="test-meme" class="btn-success"><i class="fa-solid fa-flask"></i> Generate Test Meme</button>
+                    <button id="view-memes" class="btn-secondary"><i class="fa-solid fa-images"></i> View Memes</button>
+                </div>
+                
+                <div id="last-meme-container" style="margin-top: 12px; display: none;">
+                    <label>Latest Meme</label>
+                    <div style="border: 1px solid #40444b; border-radius: 4px; padding: 8px; margin-top: 4px; background-color: #36393f;">
+                        <div id="last-meme-info" style="font-size: 12px; color: #b9bbbe; margin-bottom: 6px;"></div>
+                        <img id="last-meme-image" style="max-width: 100%; border-radius: 4px; display: none;" />
+                        <div id="last-meme-placeholder" style="text-align: center; padding: 20px; color: #72767d;">No memes generated yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <i class="fa-solid fa-message icon"></i>Status Management
