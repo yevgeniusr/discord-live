@@ -8,6 +8,8 @@ A browser extension that automatically updates your Discord custom status based 
 - Supports custom URL pattern mapping for personalized status messages
 - Allows manual status updates from the popup interface
 - Configurable update frequency
+- Take screenshots of your current tab for sharing
+- Generate custom memes based on your browsing activity
 
 ## Installation
 
@@ -32,6 +34,9 @@ A browser extension that automatically updates your Discord custom status based 
 2. The extension will automatically fetch your Discord token if you have Discord open in a browser tab
 3. Configure your custom URL patterns and status messages if desired
 4. The extension will automatically update your Discord status based on your active tabs
+5. Configure automatic screenshot settings to capture tabs at your preferred frequency
+6. Enter your OpenAI API key to generate custom memes based on your browsing activity
+7. All memes are stored locally in your downloads folder
 
 ### Token Management
 
